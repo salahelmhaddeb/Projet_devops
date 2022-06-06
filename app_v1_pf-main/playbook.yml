@@ -1,0 +1,27 @@
+- name: Playbook_groupe3
+  user: debian
+  hosts: vminfo
+  become: yes
+  tasks:
+  - name: supprimer fichiers
+    shell: "rm -rf /home/debian/app/*"
+  - name: Importer les fichiers du git
+    git:
+      repo: https://github.com/AlexLsr/app_v1_pf.git
+      dest: /home/debian/app/
+      version: "main"
+      clone: yes
+      update: yes
+      force: yes
+  - name: 🐳 Arrêt de l'application
+    shell: "docker system prune --all -f && docker kill $(docker ps -q) && docker rm $(docker ps -a -q) && docker rmi $(docker images -q)"
+    args:
+      chdir: /home/debian/app/
+    register: dockerdeletedebug
+  - debug: var=dockerdeletedebug.stdout_lines
+  - name: Déploiement du conteneur de l'app
+    shell: "docker-compose up --build -d --scale app=3"
+    args:
+      chdir: /home/debian/app/
+    register: dockercreatedebug
+  - debug: var=dockercreatedebug.stdout_lines
